@@ -4,7 +4,6 @@ version: '3'
 services:
 
   database:
-    database:
     image: postgres:13.3
     volumes:
     - ./postgresql:/var/lib/postgresql/data
@@ -15,7 +14,17 @@ services:
     ports:
       - "5432:5432"
   
-  server:
-    restart: always
+  router:
+    image: nginx
+    # restart: always
+    volumes:
+      - ./nginx/conf/:/etc/nginx/conf.d/:ro
+      - ./frontend/:/path/to/main/frontend:ro
+
+  mintor:
+    build: server/
+    command: sh -c 'python3 server.py'
+
+
 
   
