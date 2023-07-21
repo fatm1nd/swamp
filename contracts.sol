@@ -121,6 +121,8 @@ contract PaperNFT is ERC721{
         address[] pros_authors;
 
         int8 boughtLevel; 
+
+        uint256 timestamp;
     }
 
 
@@ -136,14 +138,15 @@ contract PaperNFT is ERC721{
         return _requests[token_id];
     }
 
-    function setRequest(uint256 token_id, string memory sign_message, address reader, address[] memory ai_authors, address[] memory begginers_authors,address[] memory middle_authors, address[] memory pros_authors) public {
+    function setRequest(uint256 token_id, string memory sign_message, address reader, address[] memory ai_authors, address[] memory begginers_authors,address[] memory middle_authors, address[] memory pros_authors, uint256 timestamp) public {
         require(msg.sender == _mintor);
         _requests[token_id] = Request(token_id, reader, sign_message,
         (_unit_cost ), ai_authors,
         (_unit_cost * 2), begginers_authors,
         (_unit_cost * 3), middle_authors,
         (_unit_cost * 4), pros_authors,
-        -1
+        -1,
+        timestamp
         );
     }
 
@@ -165,7 +168,7 @@ contract PaperNFT is ERC721{
     function createNewPaper(string memory sign_message, address reader, address[] memory ai_authors, address[] memory begginers_authors,address[] memory middle_authors, address[] memory pros_authors, address leavesOperator) public returns (uint256){
         require(msg.sender == _mintor);
         _safeMint(_mintor,tokenCounter);
-        setRequest(tokenCounter, sign_message, reader, ai_authors, begginers_authors, middle_authors, pros_authors);
+        setRequest(tokenCounter, sign_message, reader, ai_authors, begginers_authors, middle_authors, pros_authors, block.timestamp);
         _setApprovalForAll(_mintor, leavesOperator, true);
         tokenCounter += 1;
         return tokenCounter - 1;
@@ -173,4 +176,68 @@ contract PaperNFT is ERC721{
     }
 
 }
+
+
+// contract CutNFT is ERC721{
+
+//     address private _mintor; 
+
+//     uint256 private tokenCounter = 1;
+
+//     uint128 private _unit_cost;
+
+//     struct Request{
+//         uint256 token_id;
+
+//         address reader;
+
+//         string sign_message;
+
+//         address author;
+
+//         uint8 level;
+
+//         uint256 timstamp;
+        
+//     }
+
+
+
+//     mapping(uint256 token_id => Request) private _requests;
+
+//     constructor(address mintor, uint128 unit_cost) ERC721("Cut","CUT"){
+//         _mintor = mintor;
+//         _unit_cost = unit_cost;
+//     }
+
+//     function getRequest(uint256 token_id) public view returns (Request memory){
+//         return _requests[token_id];
+//     }
+
+//     function setRequest(uint256 token_id, string memory sign_message, address reader, address author, uint8 level) public {
+//         require(msg.sender == _mintor);
+//         _requests[token_id] = Request(token_id, reader, sign_message, author, level, block.timestamp);
+//     }
+
+
+//     function isPaperBought(uint256 token_id) public view returns (bool){
+//         _requireMinted(token_id);
+//         return ownerOf(token_id) != _mintor;
+//     }
+
+//     function _safeMint(address to, uint256 tokenId) override internal virtual {
+//         _safeMint(to, tokenId, "");
+//     }
+
+//     function createNewCut(string memory sign_message, address reader, address author, uint8 level, address leavesOperator) public returns (uint256){
+//         require(msg.sender == _mintor);
+//         _safeMint(_mintor,tokenCounter);
+//         setRequest(tokenCounter, sign_message, reader, author, level);
+//         _setApprovalForAll(_mintor, leavesOperator, true);
+//         tokenCounter += 1;
+//         return tokenCounter - 1;
+    
+//     }
+
+// }
 
