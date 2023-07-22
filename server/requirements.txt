@@ -1,1 +1,6 @@
 flask
+web3
+eth_account
+python-dotenv
+flask_cors
+psycopg2

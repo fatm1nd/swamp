@@ -4,3 +4,5 @@
 /feed.html
 /server.py
 .env
+server/hashGenerator.py
+server/testing.py

@@ -20,10 +20,14 @@ services:
     volumes:
       - ./nginx/conf/:/etc/nginx/conf.d/:ro
       - ./frontend/:/path/to/main/frontend:ro
+    ports:
+     - 80:80
 
   mintor:
     build: server/
     command: sh -c 'python3 server.py'
+    volumes:
+        - ./server/cuts/:/cuts/
 
 
 
