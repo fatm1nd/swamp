@@ -8,5 +8,5 @@ ADD .env /
 ADD database.py /
 ADD hashGenerator.py /
 ADD shrek_script.txt /
-
+add web3_module.py /
 # RUN python3 main.py

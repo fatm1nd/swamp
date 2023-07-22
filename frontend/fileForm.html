@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload</title>
+</head>
+<body>
+    <h1>Upload a File</h1>
+    <form action="http://api.swamp.local/uploadCut" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file">
+        <label>Paid?<input type="checkbox" name="paid" id="paid"></label>
+        <input type="text" hidden name="access_token" id="access_token">
+        <input type="submit" value="Upload">
+    </form>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.3/dist/web3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+
+        const serverURL = 'http://api.swamp.local';
+
+        
+
+        function getCookie(name) {
+            let matches = document.cookie.match(new RegExp(
+                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+        function setCookie(name, value, options = {}) {
+
+            options = {
+            path: '/',
+            // при необходимости добавьте другие значения по умолчанию
+            ...options
+            };
+
+            if (options.expires instanceof Date) {
+            options.expires = options.expires.toUTCString();
+            }
+
+            let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+
+            for (let optionKey in options) {
+            updatedCookie += "; " + optionKey;
+            let optionValue = options[optionKey];
+            if (optionValue !== true) {
+                updatedCookie += "=" + optionValue;
+            }
+            }
+
+            document.cookie = updatedCookie;
+        }
+
+        document.getElementById('access_token').value = getCookie('access_token')    
+
+
+        // var access_token = await loadJSON2(serverURL+'/uploadCut');
+        // const input = document.getElementById('fileinput');
+        // input.files[0]
+
+        async function upload() {
+            var input = document.getElementById('file');
+            console.log(input)
+
+            var data = new FormData()
+            data.append('file', input.files[0])
+            data.append('access_token', getCookie('access_token'))
+            data.append('paid')
+
+            var data = {
+                access_token: getCookie('access_token'),
+                file: input.files[0],
+                paid: document.getElementById('paid').value
+            };
+            // console.log(data)
+            const options = {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                },
+                body: data
+            };
+            var response = await fetch(serverURL+'/uploadCut', options)
+            var j =  await response.json()
+            console.log(j)
+        }
+    </script>
+</body>
+</html>

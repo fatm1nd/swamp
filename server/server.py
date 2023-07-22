@@ -11,6 +11,7 @@ import database
 import time
 import hashGenerator
 from datetime import datetime, timedelta
+import web3_module
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -51,6 +52,7 @@ def verify_signature(message, signature, user_address):
     try:
         message = encode_defunct(text=message)
         recovered_address = w3.eth.account.recover_message(message,signature=HexBytes(signature))
+        print(recovered_address, user_address, flush=True)
         return recovered_address.lower() == user_address.lower()
     except Exception as e:
         print(e, flush=True)
@@ -69,13 +71,73 @@ def verify():
         return jsonify({"status":"Not enough data"}), 400
 
     try:
-        if verify_signature(code, signature, address):
-            token = getAccessToken(address)
-            return jsonify(({'token' : token})), 200
+        if verify_signature(code, signature, address) and validateAuthCode(code):
+            user_id, token = database.login(address)
+            return jsonify(({'user_id':user_id,'access_token' : token})), 200
         else:
             return jsonify({'error': 'Signature verification failed'}), 401
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/user/verifyToken',methods=['POST'])
+@cross_origin()
+def checkToken():
+    data = request.get_json(force=True)
+    token = data.get('access_token')
+    address = data.get('address')
+
+    user_id, address, access_token = database.checkAccessToken(token)
+    if user_id == False:
+        return jsonify({'status':1,'comment':"Code is expired or not existed"})
+    else:
+        return jsonify({'status':0,'comment':"Success"})
+    
+
+def validateAuthCode(code):
+    
+    print(TEMP_CODES, flush=True)
+    if code in TEMP_CODES:
+        if TEMP_CODES[code] > datetime.now():
+            print("Success Code")
+            del TEMP_CODES[code]
+            return True
+        else:
+            print("Time error")
+            return False
+    else:
+        print("There is no code")
+        return False
+    
+@app.route('/paper',methods=['POST'])
+@cross_origin()
+def getThePaper():
+
+    data = request.get_json(force=True)
+    paper_id = data.get('token_id')
+    access_token = data.get('access_token')
+    signature = data.get('signature')
+    sign_message = data.get('sign_message')
+
+    user_id, address, access_token = database.checkAccessToken(access_token)
+
+    if user_id == False:
+        return jsonify({'status' : 1})
+
+    # Check the signature
+    if not verify_signature(sign_message, signature, address):
+        return jsonify({'status' : 2})
+    
+    # Check the own
+    if not checkThePaper(paper_id):
+        return jsonify({'status' : 3})
+    
+
+
+    
+
+
+
+
 
 def validateToken(access_token):
     ''' 
@@ -100,31 +162,26 @@ def validateToken(access_token):
 
 
 def getAccessToken(address):
-    access_token = str(hashGenerator.simpleHash())
-    database.updateToken(address,access_token)
+    user_id, access_token = database.login(address)
     (user_id,temp_token,timestemp) = database.checkAccessToken(access_token)
     ACCESS_TOKEN_CACHE[temp_token] = {"timestamp":timestemp,"user_id":user_id}
     return access_token
 
 
 
-@app.route("/uploadCut", methods=["GET", "POST"])
+@app.route("/uploadCut", methods=["POST"])
 @cross_origin()
 def upload_file():
-    # Ask user is it paid and ask to send author access_token
     print(request.files,flush=True)
-    print(request.form, flush=True)
 
-    # data = request.get_json(force=True)
-    # print(data, flush=True)
-    # # print(data)
-    access_token = request.form['access_token'] 
-    paid = request.form['paid']
-    # # access_token = data.get('access_token')
-    # if database.checkAccessToken(access_token):
-    #     return jsonify({'status':'invalid_token'})
-    # signature = data.get('signature')
-    # code = data.get('code')
+    data = dict(request.form)
+    print(data, flush=True)
+    access_token = data['access_token']
+    paid = False
+    if 'paid' in data:
+        paid = bool(data['paid'])
+
+    
 
     if request.method == "POST":
         # Check if the POST request has the file part
@@ -132,6 +189,7 @@ def upload_file():
             return jsonify({"status":3})
         
         file = request.files["file"]
+        print(file, flush=True)
         
         # If the user does not select a file, the browser may submit an empty part without a filename
         if file.filename == None:
@@ -144,11 +202,8 @@ def upload_file():
         filename = hashGenerator.textToHash(str(datetime.now()) + file.filename) + ".md"
 
         # Save the file to the specified folder
-        database.addCutToDB("dasiudhnbhwbf87gewf78wevf879g",filename,False)
+        database.addCutToDB(access_token,filename, paid)
         file.save(str("./cuts/") + filename)
-
-        
-
         return jsonify({"status":0})
     else:
         return jsonify({"status":1})
