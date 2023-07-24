@@ -1,1 +1,289 @@
-SWAMP TEST
+<!DOCTYPE html>
+<html>
+<head>
+    <title>S.W.A.M.P.</title>
+    <style>
+        @font-face {
+          font-family: "SpecialFont";
+          src: url("fonts/EBENYA.ttf") format("truetype");
+          /* Add other font formats here if needed (e.g., woff, woff2) */
+        }
+    
+        body {
+          display: flex;
+          justify-content: center;
+          flex-direction: column; /* Changed the flex direction to arrange elements in a column */
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          font-family: "SpecialFont", sans-serif;
+        }
+    
+        .letter-block {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 180px;
+          height: 180px;
+          font-size: 19vh;
+          margin: 10px;
+          transition: 2s;
+        }
+    
+        #letters-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+    
+        #button-container {
+          margin-top: 20px;
+          text-align: center;
+        }
+    
+        #authbutton {
+          padding: 10px 20px;
+          font-size: 19px;
+          background-color: #e0a80f;
+          border-radius: 3px;
+          color: white;
+          border: none;
+          cursor: pointer;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="letters-container">
+        <div id="sLetter" class="letter-block">S.</div>
+        <div id="wLetter" class="letter-block">W.</div>
+        <div id="aLetter" class="letter-block">A.</div>
+        <div id="mLetter" class="letter-block">M.</div>
+        <div id="pLetter" class="letter-block">P.</div>
+      </div>
+    
+      <div id="button-container">
+        <button id="authbutton" onclick="login()">Metamask ❌ | SWAMP ❌</button>
+      </div>
+
+
+
+
+      <script src="https://cdn.jsdelivr.net/npm/web3@1.5.3/dist/web3.min.js"></script>
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> 
+      <script>
+
+        const rpcURL = 'https://rpc-mumbai.maticvigil.com'; // Mumbai testnet RPC URL
+        const serverURL = 'http://api.swamp.press';
+
+        function getCookie(name) {
+            let matches = document.cookie.match(new RegExp(
+                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+
+        async function changeColourButton(){
+            
+          const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+          if (accounts.length == 0) console.log("User is not logged in to MetaMask");
+          else if (getCookie('access_token') == undefined) {
+              document.getElementById("authbutton").style.background = "#f0b30d"
+              document.getElementById("authbutton").innerHTML = "<u>Metamask</u> -> SWAMP"
+              window.ethereum.enable();
+          }
+          else{
+              document.getElementById("authbutton").style.background = "#4CAF50"
+              document.getElementById("authbutton").innerHTML = "SWAMP Connected"
+
+              document.getElementById('sLetter').style.textShadow = "5px 5px 5px #000"
+              document.getElementById('sLetter').style.cursor = "pointer"
+              document.getElementById('sLetter').addEventListener('click', function() {
+                  location.href = '/seeking'
+              }, false);
+
+              document.getElementById('wLetter').style.textShadow = "5px 5px 5px #000"
+              document.getElementById('wLetter').style.cursor = "pointer"
+              document.getElementById('wLetter').addEventListener('click', function() {
+                  location.href = '/writers'
+              }, false);
+
+              document.getElementById('aLetter').style.textShadow = "5px 5px 5px #000"
+
+              document.getElementById('mLetter').style.textShadow = "5px 5px 5px #000"
+              document.getElementById('mLetter').style.cursor = "pointer"
+              document.getElementById('mLetter').addEventListener('click', function() {
+                  location.href = '/uploadCut'
+              }, false);
+
+              document.getElementById('pLetter').style.textShadow = "5px 5px 5px #000"
+              document.getElementById('pLetter').style.cursor = "pointer"
+              document.getElementById('pLetter').addEventListener('click', function() {
+                  location.href = '/authorpage'
+              }, false);
+
+              window.ethereum.enable();
+          }
+        }
+        
+        
+       
+
+        async function checkAuth(){
+            console.log(web3.eth.getAccounts())
+        }
+
+        changeColourButton();
+        
+        const inteer = setInterval(changeColourButton,500)
+
+        
+
+        function setCookie(name, value, options = {}) {
+
+            options = {
+            path: '/',
+            // при необходимости добавьте другие значения по умолчанию
+            ...options
+            };
+
+            if (options.expires instanceof Date) {
+            options.expires = options.expires.toUTCString();
+            }
+
+            let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+
+            for (let optionKey in options) {
+            updatedCookie += "; " + optionKey;
+            let optionValue = options[optionKey];
+            if (optionValue !== true) {
+                updatedCookie += "=" + optionValue;
+            }
+            }
+
+            document.cookie = updatedCookie;
+        }
+
+        async function signMessage(message) {
+            if (window.ethereum) {
+                try {
+                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                    const userAddress = accounts[0];
+                    const web3 = new Web3(ethereum);
+
+                    const signature = await web3.eth.personal.sign(message, userAddress, ''); // Signing using personal_sign
+                    return signature
+                    // document.getElementById('signature').value = signature;
+                } catch (error) {
+                    console.error('Error signing the message:', error);
+                }
+            } else {
+                alert('Please install MetaMask to sign the message.');
+            }
+        }
+
+        async function verifySignature() {
+            const message = document.getElementById('message').value;
+            const signature = document.getElementById('signature').value;
+            const userAddress = document.getElementById('user_address').value;
+            // Data to be sent in the request body
+            const data = {
+                message: message,
+                signature: signature,
+                user_address: userAddress
+            };
+
+            // Configure the request
+            const options = {
+                method: 'POST',
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            };
+
+            // Send the request using the Fetch API
+            fetch(serverURL+'/verify',options)
+                .then(response => {
+                    console.log(response)
+                    if (!response.ok) {
+                        console.log(response)
+                        throw new Error('Network response was not ok.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Assuming the server responds with a success message in the JSON response
+                    const successMessage = data;
+                    document.getElementById('status').textContent = `Success: ${successMessage.token}`;
+                })
+                .catch(error => {
+                    document.getElementById('status').textContent = `Error: ${error.message}`;
+                });
+        }
+
+
+        async function login(){
+            // const message = document.getElementById('message').value;
+            // const userAddress = document.getElementById('user_address').value;
+            
+            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+            const userAddress = accounts[0];
+
+            
+
+
+            // Send the request using the Fetch API
+            // data = fetch(serverURL+'/user/code',options).then((response) => response.json())
+            // .then((json) => console.log(json.code));
+
+            var code = await loadJSON(serverURL+'/user/code');
+            async function loadJSON(fname) {
+                const options = {
+                    method: 'GET',
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json"
+                    }            
+                };
+                var response = await fetch(fname, options)
+                var j =  await response.json()
+                return (j.code)
+            }
+            // console.log(code)
+
+            
+
+            var access_token = await loadJSON2(serverURL+'/user/auth');
+            async function loadJSON2(fname) {
+                signature = await signMessage(code)
+
+                var data = {
+                    code: code,
+                    signature: signature,
+                    address: userAddress
+                };
+                console.log(data)
+                const options = {
+                    method: 'POST',
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                };
+                var response = await fetch(fname, options)
+                var j =  await response.json()
+                console.log(j)
+                // document.cookie = 'access_token='+j.access_token
+                setCookie("access_token",j.access_token)
+                changeColourButton()
+            }
+
+        }  
+
+      </script>
+    </body>
+</html>

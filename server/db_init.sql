@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS users_token(
 
 CREATE TABLE iF NOT EXISTS subscriptions(
     reader_id INTEGER,
-    author_id INTEGER
+    author_id INTEGER,
+    sub_level INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS papers(
@@ -27,3 +28,10 @@ CREATE TABLE IF NOT EXISTS cuts(
     publicDate timestamp,
     paid bool
 )
+
+CREATE TABLE IF NOT EXISTS "cutsToPaper"
+(
+    paper_id INTEGER,
+    cut_id INTEGER
+);
+

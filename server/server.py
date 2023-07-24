@@ -12,10 +12,13 @@ import time
 import hashGenerator
 from datetime import datetime, timedelta
 import web3_module
+import markdown
+
 
 app = Flask(__name__)
-cors = CORS(app)
+# cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 f = open("shrek_script.txt","r")
 shrekScript = f.readline().split()
@@ -34,6 +37,17 @@ def sign_message(message, private_key):
     signable_message = messages.encode_defunct(text=message)
     signed_msg = w3.eth.account.sign_message(signable_message, private_key=private_key)
     return signed_msg.signature.hex()
+
+@app.route('/', methods=['OPTIONS'])
+def index():
+    if request.method == 'OPTIONS':
+        # This is the preflight request, so you need to respond with the necessary CORS headers.
+        response = jsonify({'message': 'Preflight successful'})
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
+    return None
+
 
 @app.route("/ping")
 def pong():
@@ -84,7 +98,6 @@ def verify():
 def checkToken():
     data = request.get_json(force=True)
     token = data.get('access_token')
-    address = data.get('address')
 
     user_id, address, access_token = database.checkAccessToken(token)
     if user_id == False:
@@ -108,33 +121,102 @@ def validateAuthCode(code):
         print("There is no code")
         return False
     
-@app.route('/paper',methods=['POST'])
+@app.route('/paper',methods=['POST','OPTIONS'])
 @cross_origin()
 def getThePaper():
 
+    if request.method == 'OPTIONS':
+        # This is the preflight request, so you need to respond with the necessary CORS headers.
+        response = jsonify({'message': 'Preflight successful'})
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
+    
+    
+
     data = request.get_json(force=True)
-    paper_id = data.get('token_id')
+    paper_id = data.get('paper_id')
     access_token = data.get('access_token')
     signature = data.get('signature')
-    sign_message = data.get('sign_message')
+    address = data.get('address')
 
-    user_id, address, access_token = database.checkAccessToken(access_token)
+    user_id, token, date = database.checkAccessToken(access_token)
 
     if user_id == False:
         return jsonify({'status' : 1})
 
+    print(web3_module.getSignWord(paper_id), signature, address, flush=True)
+
     # Check the signature
-    if not verify_signature(sign_message, signature, address):
-        return jsonify({'status' : 2})
+    if not verify_signature(web3_module.getSignWord(paper_id), signature, address):
+        return jsonify({'status' : 2, "comment" : "Paper of other user"})
     
     # Check the own
-    if not checkThePaper(paper_id):
-        return jsonify({'status' : 3})
+    if not web3_module.checkThePaper(paper_id, address):
+        return jsonify({'status':3, "comment":"Buy the paper!"})
+    
+    level = web3_module.getThePaperLevel(paper_id)
+
+    cuts = database.getPaper(paper_id, level)
+
+    return jsonify(cuts)
     
 
 
     
 
+@app.route('/leaves/buy',methods=['POST'])
+@cross_origin()
+def buyToken():
+    
+    data = request.get_json(force=True)
+    address = data.get('address')
+    signature = data.get('signature')
+    code = data.get('code')
+    amount = data.get('amount')
+    recipient_address = data.get('recipient')
+
+
+    if not all([code, signature, address]):
+        return jsonify({"status":"Not enough data"}), 400
+
+    if web3_module.server_address == address:
+        return jsonify({"status":"You are not minter"})
+
+    try:
+        if verify_signature(code, signature, address) and validateAuthCode(code):
+            print(web3_module.mintSomeTokens(recipient_address, amount))
+            return jsonify(({'status' : 0})), 200
+        else:
+            return jsonify({'status' : 1}), 401
+    except Exception as e:
+        return jsonify({'status': str(e)}), 500
+
+
+    
+
+@app.route('/leaves/balance',methods=['POST'])
+@cross_origin()
+def balanceOf():
+    data = request.get_json(force=True)
+    address = data.get('address')
+    
+    user_id, address, access_token = database.checkAccessToken(access_token)
+
+    if user_id == False:
+        return jsonify({'status' : 1})
+    return jsonify({'status':0,'balance': web3_module.balanceOf(address)})
+
+
+
+@app.route('/user/papers',methods=['POST'])
+@cross_origin()
+def cutsOfuser():
+    data = request.get_json(force=True)
+    access_token = data.get('access_token')
+    user_id, address, access_token = database.checkAccessToken(access_token)
+
+    return jsonify(database.getUsersPaper(user_id))
 
 
 
@@ -197,7 +279,6 @@ def upload_file():
         
         if file.filename[-3:] != ".md":
             return jsonify({"status": 4})
-
 
         filename = hashGenerator.textToHash(str(datetime.now()) + file.filename) + ".md"
 

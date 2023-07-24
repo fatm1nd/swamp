@@ -4,3 +4,4 @@ eth_account
 python-dotenv
 flask_cors
 psycopg2
+markdown

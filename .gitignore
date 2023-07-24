@@ -3801,4 +3801,5 @@ server/venv/lib/python3.11/site-packages/yarl-1.9.2.dist-info/top_level.txt
 server/venv/lib/python3.11/site-packages/yarl-1.9.2.dist-info/WHEEL
 server/log.txt
 server/__pycache__/hashGenerator.cpython-311.pyc
-server/cuts/94cf9cc29cd49389b22f5644c547dd03af2512611c593a647a950d789ce504ed.md
+server/cuts
+server/venv
